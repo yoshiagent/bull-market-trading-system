@@ -638,8 +638,62 @@
     </div>
   </section>
 
-  <!-- ══ 10 操作流程總結 ══ -->
+  <!-- ══ 10 高檔爆量出場 ══ -->
   <section class="slide" id="s9">
+    <div class="content-wrap">
+      <div class="tag tag-red">Volume Spike Exit</div>
+      <h2>爆量出場策略</h2>
+      <div style="display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;">
+        <!-- 圖解 -->
+        <div style="flex:1; min-width:260px;">
+          <div class="card center" style="padding:28px;">
+            <div style="font-size:13px; color:var(--sub); margin-bottom:14px;">高檔爆量 K 棒出場示意</div>
+            <svg viewBox="0 0 260 130" width="260" height="130">
+              <!-- 上漲走勢前幾根 -->
+              <rect x="10"  y="80" width="14" height="40" rx="2" fill="#2d3f55"/>
+              <rect x="32"  y="65" width="14" height="55" rx="2" fill="#2d3f55"/>
+              <rect x="54"  y="50" width="14" height="70" rx="2" fill="#2d3f55"/>
+              <!-- 高檔爆量K棒 -->
+              <rect x="76"  y="20" width="18" height="100" rx="2" fill="rgba(248,113,113,0.55)" stroke="#f87171" stroke-width="1.5"/>
+              <text x="85" y="14" fill="#f87171" font-size="10" font-family="sans-serif" text-anchor="middle">高檔爆量</text>
+              <!-- 最低點虛線 -->
+              <line x1="94" y1="120" x2="245" y2="120" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,4"/>
+              <text x="174" y="115" fill="#fbbf24" font-size="10" font-family="sans-serif" text-anchor="middle">爆量K最低點</text>
+              <!-- 後續K棒 -->
+              <rect x="102" y="30" width="14" height="80" rx="2" fill="#2d3f55"/>
+              <rect x="124" y="40" width="14" height="75" rx="2" fill="#2d3f55"/>
+              <rect x="146" y="55" width="14" height="65" rx="2" fill="#2d3f55"/>
+              <!-- 跌破出場K棒 -->
+              <rect x="168" y="75" width="18" height="45" rx="2" fill="rgba(248,113,113,0.5)" stroke="#f87171" stroke-width="1.5"/>
+              <!-- 出場箭頭 -->
+              <text x="177" y="12" fill="#f87171" font-size="10" font-family="sans-serif" text-anchor="middle">▼ 出場</text>
+              <line x1="177" y1="15" x2="177" y2="72" stroke="#f87171" stroke-width="1.5" stroke-dasharray="3,3"/>
+            </svg>
+            <div style="font-size:13px; color:var(--callout-text); margin-top:8px;">
+              等待收盤或即時價<strong style="color:var(--red);">跌破爆量K最低點</strong>才出場
+            </div>
+          </div>
+        </div>
+        <!-- 說明 -->
+        <div style="flex:1.4; min-width:280px;">
+          <ul class="list">
+            <li><strong>高檔爆大量</strong>：在相對高價區出現<span class="hl-red">異常大量</span>，代表大量持股人解套或獲利了結出貨</li>
+            <li>爆量當下<strong>不急出場</strong>，先觀察等待</li>
+            <li>當股價<span class="hl-red">向下跌破爆量 K 棒最低點</span>時確認出場</li>
+            <li>邏輯：<span class="hl-blue">「大量的人都賠錢了」</span>，套牢籌碼沉重，每次反彈都是賣壓</li>
+            <li>跌破後若反彈<strong>量縮無力</strong>，更確認出場訊號成立</li>
+            <li>可搭配<span class="hl-orange">反 N 形</span>型態一起判斷，雙重確認</li>
+          </ul>
+          <div class="callout" style="margin-top:16px; border-left-color: var(--red); background: rgba(248,113,113,0.07);">
+            <strong style="color:var(--red);">口訣：</strong><span style="color:#fca5a5;">高檔爆大量 → 等整理 → 跌破最低點 → 出場，套牢籌碼壓頭漲不動</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 11 操作流程總結 ══ -->
+  <section class="slide" id="s10">
     <div class="content-wrap">
       <div class="tag tag-orange">Summary</div>
       <h2>完整操作流程</h2>
@@ -675,7 +729,7 @@
 </div><!-- /slides -->
 
 <!-- ─── 頁碼 ─── -->
-<div id="page-counter">1 / 10</div>
+<div id="page-counter">1 / 11</div>
 
 <!-- ─── 導覽按鈕 ─── -->
 <div id="nav">
