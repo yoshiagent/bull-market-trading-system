@@ -585,8 +585,61 @@
     </div>
   </section>
 
-  <!-- ══ 09 操作流程總結 ══ -->
+  <!-- ══ 09 爆量操作策略 ══ -->
   <section class="slide" id="s8">
+    <div class="content-wrap">
+      <div class="tag tag-orange">Volume Spike Strategy</div>
+      <h2>爆量操作策略</h2>
+      <div style="display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;">
+        <!-- 圖解 -->
+        <div style="flex:1; min-width:260px;">
+          <div class="card center" style="padding:28px;">
+            <div style="font-size:13px; color:var(--sub); margin-bottom:14px;">爆量 K 棒進場示意</div>
+            <svg viewBox="0 0 260 130" width="260" height="130">
+              <!-- 前幾根量小K棒 -->
+              <rect x="10"  y="90" width="14" height="30" rx="2" fill="#2d3f55"/>
+              <rect x="32"  y="85" width="14" height="35" rx="2" fill="#2d3f55"/>
+              <rect x="54"  y="80" width="14" height="40" rx="2" fill="#2d3f55"/>
+              <!-- 爆量K棒（低檔） -->
+              <rect x="76"  y="55" width="18" height="65" rx="2" fill="rgba(251,146,60,0.6)" stroke="#fb923c" stroke-width="1.5"/>
+              <text x="85" y="48" fill="#fb923c" font-size="10" font-family="sans-serif" text-anchor="middle">爆量</text>
+              <!-- 最高點虛線 -->
+              <line x1="94" y1="55" x2="245" y2="55" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,4"/>
+              <text x="174" y="50" fill="#fbbf24" font-size="10" font-family="sans-serif" text-anchor="middle">爆量K最高點</text>
+              <!-- 後續K棒整理 -->
+              <rect x="102" y="70" width="14" height="50" rx="2" fill="#2d3f55"/>
+              <rect x="124" y="75" width="14" height="45" rx="2" fill="#2d3f55"/>
+              <rect x="146" y="65" width="14" height="55" rx="2" fill="#2d3f55"/>
+              <!-- 突破進場K棒（收在最高點上方） -->
+              <rect x="168" y="42" width="18" height="78" rx="2" fill="rgba(74,222,128,0.5)" stroke="#4ade80" stroke-width="1.5"/>
+              <!-- 進場箭頭 -->
+              <text x="177" y="130" fill="#4ade80" font-size="10" font-family="sans-serif" text-anchor="middle">▲ 進場</text>
+            </svg>
+            <div style="font-size:13px; color:var(--callout-text); margin-top:8px;">
+              等待收盤或即時價<strong style="color:var(--green);">突破爆量K高點</strong>才進場
+            </div>
+          </div>
+        </div>
+        <!-- 說明 -->
+        <div style="flex:1.4; min-width:280px;">
+          <ul class="list">
+            <li><strong>低檔爆量</strong>（Volume Spike）：在相對低價區出現<span class="hl-orange">異常大量</span>，代表大量換手、籌碼集中</li>
+            <li>爆量當下<strong>不進場</strong>，先觀察等待</li>
+            <li>當股價<span class="hl-green">向上突破爆量 K 棒最高點</span>時才進場</li>
+            <li>邏輯：<span class="hl-blue">「大量的人都賺錢了」</span>，持股成本整齊，後續上漲阻力小</li>
+            <li>突破前若量縮整理，更是<strong>優質等待期</strong></li>
+            <li>停損設在爆量 K 棒<span class="hl-red">最低點</span>下方</li>
+          </ul>
+          <div class="callout" style="margin-top:16px;">
+            <strong>口訣：</strong>低檔爆量 → 等整理 → 突破最高點 → 進場，籌碼乾淨漲勢順
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 10 操作流程總結 ══ -->
+  <section class="slide" id="s9">
     <div class="content-wrap">
       <div class="tag tag-orange">Summary</div>
       <h2>完整操作流程</h2>
@@ -622,7 +675,7 @@
 </div><!-- /slides -->
 
 <!-- ─── 頁碼 ─── -->
-<div id="page-counter">1 / 9</div>
+<div id="page-counter">1 / 10</div>
 
 <!-- ─── 導覽按鈕 ─── -->
 <div id="nav">
