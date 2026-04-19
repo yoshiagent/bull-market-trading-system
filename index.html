@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大盤多頭操作系統</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080e18;
+      --card: #131f2e;
+      --text: #e2e8f0;
+      --sub: #94a3b8;
+      --border: #2d3f55;
+      --blue: #3b82f6;
+      --orange: #fb923c;
+      --callout-bg: #0f2040;
+      --callout-border: rgba(59,130,246,0.3);
+      --callout-text: #93c5fd;
+      --green: #4ade80;
+      --red: #f87171;
+      --yellow: #fbbf24;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      line-height: 1.7;
+      overflow: hidden;
+    }
+
+    /* ─── 頂部進度條 ─── */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      transition: width 0.4s ease;
+      z-index: 1000;
+    }
+
+    /* ─── 投影片容器 ─── */
+    #slides {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow: auto;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ─── 頁碼 ─── */
+    #page-counter {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: var(--sub);
+      letter-spacing: 1px;
+      z-index: 999;
+    }
+
+    /* ─── 導覽按鈕（可拖曳）─── */
+    #nav {
+      position: fixed;
+      bottom: 22px;
+      right: 32px;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+      cursor: grab;
+      user-select: none;
+    }
+    #nav.dragging { cursor: grabbing; }
+
+    .nav-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-btn:hover { background: var(--blue); border-color: var(--blue); }
+
+    /* ─── 共用元件 ─── */
+    .tag {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .tag-blue  { background: rgba(59,130,246,0.18); color: var(--blue); border: 1px solid rgba(59,130,246,0.35); }
+    .tag-orange{ background: rgba(251,146,60,0.18);  color: var(--orange); border: 1px solid rgba(251,146,60,0.35); }
+    .tag-green { background: rgba(74,222,128,0.15);  color: var(--green); border: 1px solid rgba(74,222,128,0.35); }
+    .tag-red   { background: rgba(248,113,113,0.15); color: var(--red);   border: 1px solid rgba(248,113,113,0.35); }
+
+    h1 { font-size: clamp(28px, 4vw, 52px); font-weight: 800; line-height: 1.2; }
+    h2 { font-size: clamp(20px, 2.8vw, 36px); font-weight: 700; margin-bottom: 24px; }
+    h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+
+    .subtitle {
+      font-size: clamp(14px, 1.6vw, 18px);
+      color: var(--sub);
+      margin-top: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+    }
+
+    .callout {
+      background: var(--callout-bg);
+      border-left: 3px solid var(--blue);
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: var(--callout-text);
+      font-size: 15px;
+      margin-top: 16px;
+    }
+
+    ul.list { list-style: none; }
+    ul.list li {
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(45,63,85,0.6);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 15px;
+    }
+    ul.list li:last-child { border-bottom: none; }
+    ul.list li::before {
+      content: '▸';
+      color: var(--blue);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 860px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; max-width: 1000px; }
+
+    .big-num {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--blue), #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* N 形圖示 */
+    .n-shape {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      margin: 12px 0;
+    }
+    .bar {
+      width: 24px;
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* 流程步驟 */
+    .steps { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 700px; }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+    }
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* 資金分配圓圈 */
+    .capital-circles {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .circle-item { text-align: center; }
+    .circle {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+      font-weight: 700;
+    }
+    .circle-label { font-size: 13px; color: var(--sub); }
+    .circle-k { font-size: 22px; }
+    .circle-period { font-size: 11px; }
+
+    strong { color: #f0f4ff; }
+    .hl-blue   { color: var(--blue); font-weight: 700; }
+    .hl-orange { color: var(--orange); font-weight: 700; }
+    .hl-green  { color: var(--green); font-weight: 700; }
+    .hl-red    { color: var(--red); font-weight: 700; }
+
+    /* 版心 */
+    .center { text-align: center; }
+    .content-wrap { width: 100%; max-width: 900px; }
+
+    /* ─── 響應式 ─── */
+    @media (max-width: 640px) {
+      .slide { padding: 48px 24px 70px; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="slides">
+
+  <!-- ══ 01 封面 ══ -->
+  <section class="slide active" id="s0">
+    <div class="center">
+      <div class="tag tag-blue">Trading System</div>
+      <h1>大盤多頭<br>操作系統</h1>
+      <p class="subtitle">順大勢・逆小勢・關鍵進場・波段操作</p>
+      <div style="margin-top:40px; display:flex; gap:32px; justify-content:center; flex-wrap:wrap;">
+        <div class="center">
+          <div style="font-size:32px; font-weight:900; color:var(--green);">N 形</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:4px;">進場訊號</div>
+        </div>
+        <div style="width:1px; background:var(--border);"></div>
+        <div class="center">
+          <div style="font-size:32px; font-weight:900; color:var(--blue);">波段</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:4px;">操作策略</div>
+        </div>
+        <div style="width:1px; background:var(--border);"></div>
+        <div class="center">
+          <div style="font-size:32px; font-weight:900; color:var(--orange);">3 份</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:4px;">資金管理</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 02 系統架構 ══ -->
+  <section class="slide" id="s1">
+    <div class="content-wrap">
+      <div class="tag tag-blue">Overview</div>
+      <h2>系統架構總覽</h2>
+      <div class="grid-3">
+        <div class="card center">
+          <div style="font-size:40px; margin-bottom:8px;">🔍</div>
+          <h3 style="color:var(--blue);">濾網</h3>
+          <p style="font-size:14px; color:var(--sub);">大盤確認多頭格局<br>才進行個股操作</p>
+        </div>
+        <div class="card center">
+          <div style="font-size:40px; margin-bottom:8px;">📈</div>
+          <h3 style="color:var(--green);">進場 → 操作</h3>
+          <p style="font-size:14px; color:var(--sub);">N 形訊號進場<br>做錯停損 / 做對加碼</p>
+        </div>
+        <div class="card center">
+          <div style="font-size:40px; margin-bottom:8px;">📉</div>
+          <h3 style="color:var(--red);">出場</h3>
+          <p style="font-size:14px; color:var(--sub);">反 N 形訊號出現<br>跌多漲少跌多</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:24px; max-width:860px;">
+        <strong>核心邏輯：</strong>大盤為多頭才選股，個股等回檔修正到關鍵位再進場，順勢波段持有直到訊號反轉。
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 03 濾網：大盤多頭 ══ -->
+  <section class="slide" id="s2">
+    <div class="content-wrap">
+      <div class="tag tag-green">Filter</div>
+      <h2>濾網：大盤多頭</h2>
+      <div class="card">
+        <ul class="list">
+          <li>大盤趨勢確認為<strong>多頭格局</strong>，才開始尋找個股機會</li>
+          <li>空頭或盤整市場時，<span class="hl-red">不操作、不進場</span></li>
+          <li>判斷依據：指數結構是否呈現<strong>高點不斷墊高、低點不斷墊高</strong>的多頭排列</li>
+          <li>可搭配均線（20MA / 60MA）確認多頭方向</li>
+        </ul>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:20px; flex-wrap:wrap;">
+        <div class="card" style="flex:1; min-width:220px; border-color:rgba(74,222,128,0.4);">
+          <div style="color:var(--green); font-weight:700; margin-bottom:8px;">✓ 多頭特徵</div>
+          <ul class="list">
+            <li>高點逐步墊高</li>
+            <li>低點逐步墊高</li>
+            <li>均線多頭排列向上</li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; min-width:220px; border-color:rgba(248,113,113,0.4);">
+          <div style="color:var(--red); font-weight:700; margin-bottom:8px;">✗ 暫停操作</div>
+          <ul class="list">
+            <li>高點逐步降低</li>
+            <li>低點逐步降低</li>
+            <li>均線空頭排列向下</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 04 進場：N 形上漲 ══ -->
+  <section class="slide" id="s3">
+    <div class="content-wrap">
+      <div class="tag tag-green">Entry Signal</div>
+      <h2>進場訊號：N 形上漲</h2>
+      <div style="display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="flex:1; min-width:260px;">
+          <!-- N 形示意圖 -->
+          <div class="card center" style="padding:28px;">
+            <div style="font-size:13px; color:var(--sub); margin-bottom:12px;">N 形結構示意</div>
+            <div style="position:relative; height:100px; width:240px; margin:0 auto;">
+              <svg viewBox="0 0 240 100" width="240" height="100">
+                <!-- 第一段漲（漲多） -->
+                <polyline points="10,85 60,20" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 第二段跌（跌少） -->
+                <polyline points="60,20 110,50" stroke="#f87171" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 第三段漲（漲多，突破前高） -->
+                <polyline points="110,50 190,5" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 標籤 -->
+                <text x="25" y="78" fill="#4ade80" font-size="11" font-family="sans-serif">漲多</text>
+                <text x="75" y="45" fill="#f87171" font-size="11" font-family="sans-serif">跌少</text>
+                <text x="145" y="38" fill="#4ade80" font-size="11" font-family="sans-serif">漲多</text>
+                <!-- 進場箭頭 -->
+                <text x="100" y="95" fill="#fbbf24" font-size="10" font-family="sans-serif" text-anchor="middle">▲ 進場區</text>
+                <line x1="108" y1="88" x2="113" y2="55" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,3"/>
+              </svg>
+            </div>
+            <div style="font-size:13px; color:var(--callout-text); margin-top:8px;">
+              漲多 → <span style="color:var(--red);">跌少（回檔）</span> → 量增再漲突破
+            </div>
+          </div>
+        </div>
+        <div style="flex:1.4; min-width:280px;">
+          <ul class="list">
+            <li><strong>順大勢逆小勢</strong>：大趨勢向上，利用小回檔低接</li>
+            <li><strong>只在關鍵價位進場</strong>：支撐區、前次低點、整數關卡</li>
+            <li><strong>多頭回檔量縮</strong>：下跌時成交量明顯縮減，顯示賣壓輕</li>
+            <li><strong>修正乖離</strong>：回測均線或修正過大乖離（MA20/MA60）</li>
+            <li>最佳狀況：<span class="hl-orange">跌破關鍵價後假跌破</span>，快速收回</li>
+            <li><strong>量增再漲</strong>：回檔結束，放量突破確認進場</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 05 進場：關鍵確認 ══ -->
+  <section class="slide" id="s4">
+    <div class="content-wrap">
+      <div class="tag tag-green">Entry Checklist</div>
+      <h2>進場確認清單</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num" style="background:rgba(74,222,128,0.15); color:var(--green);">1</div>
+          <div>
+            <strong>大盤確認多頭</strong>
+            <div style="font-size:13px; color:var(--sub);">濾網通過，大盤指數多頭格局成立</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(59,130,246,0.15); color:var(--blue);">2</div>
+          <div>
+            <strong>個股 N 形回檔</strong>
+            <div style="font-size:13px; color:var(--sub);">第一波拉升後，開始量縮回檔修正</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(251,146,60,0.15); color:var(--orange);">3</div>
+          <div>
+            <strong>抵達關鍵支撐 / 均線</strong>
+            <div style="font-size:13px; color:var(--sub);">回測前高、MA20/60、整數關卡或跌破假跌破</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(251,191,36,0.15); color:var(--yellow);">4</div>
+          <div>
+            <strong>量增再漲，確認進場</strong>
+            <div style="font-size:13px; color:var(--sub);">出量向上，突破短期壓力，執行買入</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>口訣：</strong>大盤多 → 個股縮量回 → 到關鍵位 → 量增攻 → 進場
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 06 操作策略 ══ -->
+  <section class="slide" id="s5">
+    <div class="content-wrap">
+      <div class="tag tag-blue">Operation</div>
+      <h2>操作策略</h2>
+      <div class="grid-3" style="max-width:860px;">
+        <div class="card" style="border-color:rgba(248,113,113,0.45);">
+          <div style="font-size:32px; margin-bottom:8px;">🛑</div>
+          <h3 style="color:var(--red);">做錯停損</h3>
+          <p style="font-size:14px; color:var(--sub); margin-top:8px;">進場後走勢不如預期，<strong>立即停損</strong>，不抱希望、不凹單</p>
+          <ul class="list" style="margin-top:12px;">
+            <li>跌破進場關鍵位</li>
+            <li>訊號轉壞立刻出</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:rgba(74,222,128,0.45);">
+          <div style="font-size:32px; margin-bottom:8px;">📈</div>
+          <h3 style="color:var(--green);">做對加碼</h3>
+          <p style="font-size:14px; color:var(--sub); margin-top:8px;">走勢確認，<strong>趁回檔加碼</strong>，讓獲利部位持續擴大</p>
+          <ul class="list" style="margin-top:12px;">
+            <li>每次回檔量縮再加</li>
+            <li>金字塔加碼法</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:rgba(59,130,246,0.45);">
+          <div style="font-size:32px; margin-bottom:8px;">🌊</div>
+          <h3 style="color:var(--blue);">波段操作</h3>
+          <p style="font-size:14px; color:var(--sub); margin-top:8px;">不做短線當沖，<strong>持有至出場訊號</strong>，賺完整波段</p>
+          <ul class="list" style="margin-top:12px;">
+            <li>耐心持股波段走</li>
+            <li>訊號未反轉不出</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>鐵律：</strong>輸家加碼輸更多，贏家加碼才是正確資金控管。做錯快砍，做對敢抱。
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 07 出場策略 ══ -->
+  <section class="slide" id="s6">
+    <div class="content-wrap">
+      <div class="tag tag-red">Exit Signal</div>
+      <h2>出場訊號：反 N 形下跌</h2>
+      <div style="display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="flex:1; min-width:260px;">
+          <div class="card center" style="padding:28px;">
+            <div style="font-size:13px; color:var(--sub); margin-bottom:12px;">反 N 形結構示意</div>
+            <div style="position:relative; height:100px; width:240px; margin:0 auto;">
+              <svg viewBox="0 0 240 100" width="240" height="100">
+                <!-- 第一段跌（跌多） -->
+                <polyline points="10,15 60,80" stroke="#f87171" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 第二段漲（漲少） -->
+                <polyline points="60,80 110,50" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 第三段跌（跌多，破前低） -->
+                <polyline points="110,50 190,95" stroke="#f87171" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- 標籤 -->
+                <text x="18" y="55" fill="#f87171" font-size="11" font-family="sans-serif">跌多</text>
+                <text x="72" y="58" fill="#4ade80" font-size="11" font-family="sans-serif">漲少</text>
+                <text x="145" y="88" fill="#f87171" font-size="11" font-family="sans-serif">跌多</text>
+                <!-- 出場箭頭 -->
+                <text x="108" y="14" fill="#f87171" font-size="10" font-family="sans-serif" text-anchor="middle">▼ 出場區</text>
+                <line x1="110" y1="18" x2="112" y2="45" stroke="#f87171" stroke-width="1.5" stroke-dasharray="3,3"/>
+              </svg>
+            </div>
+            <div style="font-size:13px; color:var(--callout-text); margin-top:8px;">
+              跌多 → <span style="color:var(--green);">漲少（反彈）</span> → 再跌破前低
+            </div>
+          </div>
+        </div>
+        <div style="flex:1.4; min-width:280px;">
+          <ul class="list">
+            <li><strong>反 N 形結構確立</strong>：跌多漲少再跌多，型態成立</li>
+            <li><span class="hl-red">跌破關鍵支撐</span>：前低、均線全面失守</li>
+            <li>反彈<strong>量縮無力</strong>，無法收復失地</li>
+            <li>反彈至前高附近遇<strong>量縮壓回</strong>，是出場良機</li>
+            <li>大盤濾網同步轉弱，<span class="hl-red">全面出清</span></li>
+          </ul>
+          <div class="callout" style="margin-top:16px;">
+            <strong>口訣：</strong>跌多 → 漲少 → 再跌多 → 前低不守 → 出場
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 08 資金管理 ══ -->
+  <section class="slide" id="s7">
+    <div class="content-wrap center">
+      <div class="tag tag-orange">Money Management</div>
+      <h2>資金管理：三份操作</h2>
+      <div class="capital-circles">
+        <div class="circle-item">
+          <div class="circle" style="background:rgba(59,130,246,0.15); border:2px solid rgba(59,130,246,0.5);">
+            <div class="circle-k" style="color:var(--blue);">日K</div>
+            <div class="circle-period" style="color:var(--sub);">短波段</div>
+          </div>
+          <div style="font-size:28px; font-weight:900; color:var(--blue);">⅓</div>
+          <div class="circle-label">資金</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:6px; max-width:100px;">數天～<br>2～3週</div>
+        </div>
+        <div style="font-size:28px; color:var(--border); align-self:center;">+</div>
+        <div class="circle-item">
+          <div class="circle" style="background:rgba(251,146,60,0.15); border:2px solid rgba(251,146,60,0.5);">
+            <div class="circle-k" style="color:var(--orange);">週K</div>
+            <div class="circle-period" style="color:var(--sub);">中波段</div>
+          </div>
+          <div style="font-size:28px; font-weight:900; color:var(--orange);">⅓</div>
+          <div class="circle-label">資金</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:6px; max-width:100px;">數週～<br>1～3月</div>
+        </div>
+        <div style="font-size:28px; color:var(--border); align-self:center;">+</div>
+        <div class="circle-item">
+          <div class="circle" style="background:rgba(251,191,36,0.15); border:2px solid rgba(251,191,36,0.5);">
+            <div class="circle-k" style="color:var(--yellow);">月K</div>
+            <div class="circle-period" style="color:var(--sub);">長波段</div>
+          </div>
+          <div style="font-size:28px; font-weight:900; color:var(--yellow);">⅓</div>
+          <div class="circle-label">資金</div>
+          <div style="font-size:12px; color:var(--sub); margin-top:6px; max-width:100px;">數月～<br>半年以上</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap; max-width:780px; width:100%;">
+        <div class="card" style="flex:1; min-width:200px; border-color:rgba(59,130,246,0.35); text-align:left;">
+          <div style="color:var(--blue); font-weight:700; margin-bottom:6px;">日K 操作</div>
+          <ul class="list">
+            <li>依日線訊號進出</li>
+            <li>停損設定較緊</li>
+            <li>快進快出，機動性高</li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; min-width:200px; border-color:rgba(251,146,60,0.35); text-align:left;">
+          <div style="color:var(--orange); font-weight:700; margin-bottom:6px;">週K 操作</div>
+          <ul class="list">
+            <li>依週線訊號進出</li>
+            <li>容許較大震盪空間</li>
+            <li>賺中期主升段</li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; min-width:200px; border-color:rgba(251,191,36,0.35); text-align:left;">
+          <div style="color:var(--yellow); font-weight:700; margin-bottom:6px;">月K 操作</div>
+          <ul class="list">
+            <li>依月線訊號進出</li>
+            <li>拉長持股時間</li>
+            <li>賺最大趨勢波段</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 09 操作流程總結 ══ -->
+  <section class="slide" id="s8">
+    <div class="content-wrap">
+      <div class="tag tag-orange">Summary</div>
+      <h2>完整操作流程</h2>
+      <div class="steps">
+        <div class="step" style="border-color:rgba(74,222,128,0.4);">
+          <div class="step-num" style="background:rgba(74,222,128,0.15); color:var(--green);">①</div>
+          <div><strong style="color:var(--green);">濾網確認</strong> — 大盤為多頭才開始選股</div>
+        </div>
+        <div class="step" style="border-color:rgba(59,130,246,0.4);">
+          <div class="step-num" style="background:rgba(59,130,246,0.15); color:var(--blue);">②</div>
+          <div><strong style="color:var(--blue);">N 形進場</strong> — 漲多後量縮回關鍵位，量增再漲進場</div>
+        </div>
+        <div class="step" style="border-color:rgba(251,146,60,0.4);">
+          <div class="step-num" style="background:rgba(251,146,60,0.15); color:var(--orange);">③</div>
+          <div><strong style="color:var(--orange);">三份資金</strong> — 日K／週K／月K 各配三分之一</div>
+        </div>
+        <div class="step" style="border-color:rgba(248,113,113,0.4);">
+          <div class="step-num" style="background:rgba(248,113,113,0.15); color:var(--red);">④</div>
+          <div><strong style="color:var(--red);">做錯停損</strong> — 訊號走壞，立即停損，保留資金</div>
+        </div>
+        <div class="step" style="border-color:rgba(74,222,128,0.4);">
+          <div class="step-num" style="background:rgba(74,222,128,0.15); color:var(--green);">⑤</div>
+          <div><strong style="color:var(--green);">做對加碼</strong> — 趨勢確認，回檔量縮加碼持有</div>
+        </div>
+        <div class="step" style="border-color:rgba(248,113,113,0.4);">
+          <div class="step-num" style="background:rgba(248,113,113,0.15); color:var(--red);">⑥</div>
+          <div><strong style="color:var(--red);">反N出場</strong> — 跌多漲少跌多，型態確立出清</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /slides -->
+
+<!-- ─── 頁碼 ─── -->
+<div id="page-counter">1 / 9</div>
+
+<!-- ─── 導覽按鈕 ─── -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" title="上一頁（← 鍵）">‹</button>
+  <button class="nav-btn" id="btn-next" title="下一頁（→ 鍵）">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+
+  function go(n) {
+    if (n < 0 || n >= total || n === cur) return;
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('exit-left');
+    setTimeout(() => slides[cur >= 0 ? cur : 0].classList.remove('exit-left'), 450);
+
+    const prev = cur;
+    cur = n;
+    slides[cur].classList.add('active');
+
+    // 進度條
+    document.getElementById('progress-bar').style.width = ((cur + 1) / total * 100) + '%';
+    document.getElementById('page-counter').textContent = (cur + 1) + ' / ' + total;
+    setTimeout(() => slides[prev].classList.remove('exit-left'), 450);
+  }
+
+  // 初始進度條
+  document.getElementById('progress-bar').style.width = (1 / total * 100) + '%';
+
+  // 按鈕
+  document.getElementById('btn-prev').addEventListener('click', () => go(cur - 1));
+  document.getElementById('btn-next').addEventListener('click', () => go(cur + 1));
+
+  // 鍵盤
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(cur + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(cur - 1);
+  });
+
+  // 觸控滑動
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) dx < 0 ? go(cur + 1) : go(cur - 1);
+  });
+
+  // ─── 導覽按鈕可拖曳 ───
+  const nav = document.getElementById('nav');
+  let dragging = false, ox, oy, ex, ey;
+
+  nav.addEventListener('mousedown', e => {
+    dragging = true;
+    nav.classList.add('dragging');
+    const r = nav.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    // 切換到絕對定位
+    nav.style.right = 'auto';
+    nav.style.bottom = 'auto';
+    nav.style.left = r.left + 'px';
+    nav.style.top  = r.top  + 'px';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    nav.style.left = (e.clientX - ox) + 'px';
+    nav.style.top  = (e.clientY - oy) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    nav.classList.remove('dragging');
+  });
+</script>
+</body>
+</html>
